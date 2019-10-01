@@ -8,21 +8,33 @@ class Log:
 	def __init__(self):
 		if not os.path.exists('log'):
 			os.mkdir(dirName)
-		self.last_mday = localtime().tm_mday
-		self.filename = 'log/log_' + self.get_current_datetime()  +'.csv'
-		self.write_log('time,buy,sell\n')
+		self.week = self.get_current_week() 
+		self.filename = 'log/week_' + self.get_current_week()  +'.csv'
+		if not os.path.exists(self.filename):
+			self.write_log('time,buy,sell\n')
+		if not os.path.exists('log/latest.csv'):
+			self.write_log('time,buy,sell\n')
 		
 	def write_log(self, msg):
-		mday = localtime().tm_mday
-		if(mday != self.last_mday):
-			self.last_mday = mday
-			self.filename = 'log/log_' + self.get_current_datetime()  +'.csv'
+		week = self.get_current_week() 
+		if(week != self.week):
+			self.week = week
+			self.filename = 'log/week_' + self.get_current_week()  +'.csv'
 			self.write_log('time,buy,sell\n')
 		with open(self.filename, 'a+') as log_file:
 			log_file.write(msg)
 
 	def get_current_datetime(self):
 		return strftime("%Y-%m-%d_%H:%M:%S", localtime())
+
+	def get_current_time(self):
+		return strftime("%H:%M:%S", localtime())
+
+	def get_current_date(self):
+		return strftime("%Y-%m-%d", localtime())
+
+	def get_current_week(self):
+		return strftime("%V", localtime())
 
 
 class Notify:
@@ -33,6 +45,7 @@ class Notify:
 				exit(1)
 			self.line_init(line_token)
 			self.send = lambda msg: self.line_notify(msg)
+			self.send_pic = self.line_notify_pics
 
 	def line_init(self, token):
 		self.url = 'https://notify-api.line.me/api/notify'
@@ -47,6 +60,15 @@ class Notify:
 			self.url, headers=self.headers,
 			data = {'message': msg})
 
+	def line_notify_pics(self, msg, url):
+		requests.post(
+			self.url, headers=self.headers,
+			data = {
+			'message': msg,
+			'imageThumbnail': url,
+			'imageFullsize': url
+			}
+		)
 		
 class Parser:
 	def __init__(self, log, src=None):
